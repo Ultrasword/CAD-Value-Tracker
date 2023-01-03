@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+from datetime import datetime
 
 """
 CHF = swiss franc
@@ -128,6 +129,21 @@ def check_data_cached(year, month, day):
     """Checks if data is cached"""
     return year in LOADED_DATA and month in LOADED_DATA[year] and day in LOADED_DATA[year][month]
 
+def find_earliest_day_in_month(year, month):
+    """Find the earliest day in a month in loaded files or in stored files"""
+    if check_data_cached(year, month, 1):
+        return 
+    else:
+        for i in range(1, 32):
+            if check_data_cached(year, month, i):
+                return i
+    # if no data found, check if data exists in files
+    for i in range(1, 32):
+        if os.path.exists(os.path.join("data", f"{str(year)[2:]}-{'0' if len(str(month)) == 1 else ''}{month}-{'0' if len(str(i)) == 1 else ''}{i}.json")):
+            return i
+    return None
+
+
 # ---------------------------------------- #
 # conversion ratio
 
@@ -140,6 +156,13 @@ def calculate_cad_growth(val1: float, val2: float):
 def calculate_conversion_ratio(year, month, day) -> float:
     """Calculate the conversion ratio between two dates"""
     # find the first day of the month -- or the lowest day num
+    if not check_data_cached(year, month, 1):
+        # try loading data!
+        collect_data_for_one_day(year, month, 1, load_if_not=True)
+        if not check_data_cached(year, month, 1):
+            # if still not cached -- return None
+            return 0
+    # find base ratio
     base = min(LOADED_DATA[year][month].items(), key=lambda x: x[0])
     day1, ratio1 = base
     # check if data exists for the day given!
@@ -150,25 +173,36 @@ def calculate_conversion_ratio(year, month, day) -> float:
             # if still not cached -- return None
             return None
     # find the ratio for the day
-    ratio2 = LOADED_DATA[int(year)][int(month)][int(day)]
+    ratio2 = LOADED_DATA[year][month][day]
     result = calculate_cad_growth(ratio1, ratio2)
     return result
 
 def calculate_conversion_ratio_and_parse(year, month, day):
     """Calculate the conversion ratio and parse it into a string"""
-    return parse_data_ratio(parse_date_data(year, month, 1), parse_date_data(year, month, day), calculate_conversion_ratio(year, month, day))
+    return parse_data_ratio(parse_date_data(year, month, 1).strip(), parse_date_data(year, month, day).strip(), calculate_conversion_ratio(year, month, day))
 
 # ---------------------------------------- #
 # testing
 
-print(collect_data_for_one_month(2022, 12, load_if_not=True))
-# print(LOADED_DATA)
+# print(collect_data_for_one_month(2022, 12, load_if_not=True))
+# # print(LOADED_DATA)
 
-# print(request_data_for_date(2023, 1, 2))
+# # find date for today!
 
-for i in range(1, 32):
-    print(calculate_conversion_ratio_and_parse(2022, 12, i))
+# # print(request_data_for_date(2023, 1, 2))
+
+# for i in range(1, 32):
+#     print(calculate_conversion_ratio_and_parse(2022, 12, i))
 
 # TODO - make console application!!!
 #       - OR, make webapp
+
+# ---------------------------------------- #
+# final app
+
+# collect today's date
+today_date, today_time = datetime.today().strftime("%Y-%m-%d|%H-%M-%S").split('|')
+
+# collect data for today
+print("Data collected for today |", calculate_conversion_ratio_and_parse(*today_date.split('-')))
 
