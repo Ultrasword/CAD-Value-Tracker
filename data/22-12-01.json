@@ -1,0 +1,10 @@
+{
+    "date": "2022-12-01",
+    "historical": true,
+    "quotes": {
+      "CHFCAD": 1.434505
+    },
+    "source": "CHF",
+    "success": true,
+    "timestamp": 1669939199
+  }
