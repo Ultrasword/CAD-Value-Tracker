@@ -206,3 +206,4 @@ today_date, today_time = datetime.today().strftime("%Y-%m-%d|%H-%M-%S").split('|
 # collect data for today
 print("Data collected for today |", calculate_conversion_ratio_and_parse(*today_date.split('-')))
 
+input()
